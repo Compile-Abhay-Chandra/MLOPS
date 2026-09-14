@@ -4,5 +4,5 @@ Notes/
 work/
 LAB/
 Lecture/
-
-
+*.csv
+*.joblib
