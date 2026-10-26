@@ -1,18 +1,35 @@
 import sys
 import joblib
 import pandas as pd
-from delivery import is_valid_order
 
-distance_km = float(sys.argv[1])
-prep_time_min = float(sys.argv[2])
-traffic_level = int(sys.argv[3])
-rain = int(sys.argv[4])
+from breast_cancer.validate import validate_measurements
 
-if not is_valid_order(distance_km, prep_time_min, traffic_level, rain):
-    print("Invalid order")
-else:
-    model = joblib.load("delivery_model.joblib")
-    order = pd.DataFrame([[distance_km, prep_time_min, traffic_level, rain]],
-                          columns=["distance_km", "prep_time_min", "traffic_level", "rain"])
-    prediction = model.predict(order)[0]
-    print("Predicted delivery time:", round(prediction, 1), "minutes")
+
+model_bundle = joblib.load("breast_cancer_model.joblib")
+model = model_bundle["model"]
+feature_names = model_bundle["feature_names"]
+
+values = [float(value) for value in sys.argv[1:]]
+
+if len(values) != len(feature_names):
+    raise ValueError(
+        f"Expected {len(feature_names)} measurements, "
+        f"but received {len(values)}"
+    )
+
+measurements = dict(zip(feature_names, values))
+validate_measurements(measurements)
+
+input_data = pd.DataFrame([measurements], columns=feature_names)
+
+prediction = model.predict(input_data)[0]
+probabilities = model.predict_proba(input_data)[0]
+confidence = probabilities.max() * 100
+
+label = {
+    "M": "malignant",
+    "B": "benign"
+}[prediction]
+
+print("Prediction:", label)
+print(f"Confidence: {confidence:.2f}%")
